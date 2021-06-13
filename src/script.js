@@ -4,7 +4,7 @@ import * as dat from "dat.gui";
 import { CSS2DRenderer, CSS2DObject } from "./CSS2DRenderer";
 import { OBJLoader } from "./OBJLoader";
 // import { GLTFLoader } from "./GLTFLoader";
-
+//test comment
 //dimensions
 let HEIGHT = window.innerHeight;
 let WIDTH = window.innerWidth;
