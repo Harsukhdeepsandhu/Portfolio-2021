@@ -2,9 +2,9 @@ import "./style.css";
 import * as THREE from "three";
 import * as dat from "dat.gui";
 import { CSS2DRenderer, CSS2DObject } from "./CSS2DRenderer";
-import { OBJLoader } from "./OBJLoader";
-// import { GLTFLoader } from "./GLTFLoader";
-//test comment
+// import { OBJLoader } from "./OBJLoader";
+import { GLTFLoader } from "./GLTFLoader";
+
 //dimensions
 let HEIGHT = window.innerHeight;
 let WIDTH = window.innerWidth;
@@ -107,31 +107,56 @@ loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
 scene.add(welcomeMesh, webDeveloperMesh);
 
 //floor
-const floorGeom = new THREE.PlaneGeometry(100, 0.5, 4);
+const floorGeom = new THREE.PlaneGeometry(100, 0.5, 1);
 const floorMaterial = new THREE.MeshStandardMaterial({
   map: tileTexture,
 });
 const floor = new THREE.Mesh(floorGeom, floorMaterial);
-floor.position.set(0, -4.8, 0);
+floor.position.set(0, -4.5, 0);
+floor.rotation.x = -Math.PI * 0.4;
 scene.add(floor);
 
-// instantiate a loader
-const objLoader = new OBJLoader();
+//remove this later
+camera.position.y = -maxScroll;
 
-// load a resource
-objLoader.load(
+// Instantiate a loader
+const gltfLoader = new GLTFLoader();
+let gltf;
+
+// Load a glTF resource
+gltfLoader.load(
   // resource URL
-  "/models/ironMan.obj",
-  // called when resource is loaded
-  function (object) {
-    object.position.set(0, 0, -250);
-    object.rotation.y = Math.PI * 0.5;
-    scene.add(object);
+  "models/car.glb",
+  // called when the resource is loaded
+  function (g) {
+    gltf = g;
+    scene.add(gltf.scene);
+
+    gltf.scene.position.y = -4.5;
+    gltf.scene.position.x = -1;
+    gltf.scene.scale.set(0.2, 0.2, 0.2);
+    gltf.scene.rotation.y = -Math.PI * 0.35;
+    // gltf.scene.rotation.x = Math.PI * 0.15;
+
+    //center wheels to spin on axis
+    gltf.scene.children[0].children[5].position.y = -83;
+    gltf.scene.children[0].children[6].position.y = 43;
+    gltf.scene.children[0].children[6].position.z = 18;
+    gltf.scene.children[0].children[5].children[0].geometry.center();
+    gltf.scene.children[0].children[5].children[1].geometry.center();
+    gltf.scene.children[0].children[5].children[2].geometry.center();
+    gltf.scene.children[0].children[6].children[0].geometry.center();
+    gltf.scene.children[0].children[6].children[1].geometry.center();
+    gltf.scene.children[0].children[6].children[2].geometry.center();
+
+    gltf.animations; // Array<THREE.AnimationClip>
+    gltf.scene; // THREE.Group
+    gltf.scenes; // Array<THREE.Group>
+    gltf.cameras; // Array<THREE.Camera>
+    gltf.asset; // Object
   },
-  // called when loading is in progresses
-  function (xhr) {
-    console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-  },
+  // called while loading is progressing
+  function (xhr) {},
   // called when loading has errors
   function (error) {
     console.log("An error happened");
@@ -279,10 +304,25 @@ window.addEventListener("wheel", (event) => {
     webDeveloper3DText.position.z = 0.4;
   }
 
+  //move tires to front and back by passing the direction using conditional
+  event.deltaY > 0 ? moveVehicleToFront(true) : moveVehicleToFront(false);
+
   // console.log("Camera: " + camera.position.y);
   // console.log(webDeveloperLabel);
   // console.log("Label: " + webDeveloperLabel.position.y);
 });
+
+//move vehicle tires in direction
+const moveVehicleToFront = (front) => {
+  //rotate wheels as scene progresses
+  if (front) {
+    gltf.scene.children[0].children[5].rotation.x += 10;
+    gltf.scene.children[0].children[6].rotation.x += 10;
+  } else {
+    gltf.scene.children[0].children[5].rotation.x -= 10;
+    gltf.scene.children[0].children[6].rotation.x -= 10;
+  }
+};
 
 window.addEventListener("resize", () => {
   HEIGHT = window.innerHeight;
