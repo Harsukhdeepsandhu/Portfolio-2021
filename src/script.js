@@ -4,6 +4,8 @@ import * as dat from "dat.gui";
 import { CSS2DRenderer, CSS2DObject } from "./CSS2DRenderer";
 // import { OBJLoader } from "./OBJLoader";
 import { GLTFLoader } from "./GLTFLoader";
+import { RectAreaLight } from "three";
+import { RectAreaLightHelper } from "../node_modules/three/examples/jsm/helpers/RectAreaLightHelper.js";
 
 //dimensions
 let HEIGHT = window.innerHeight;
@@ -36,6 +38,10 @@ document.body.appendChild(renderer.domElement);
 const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 scene.add(directionalLight);
 directionalLight.position.set(0, 0, 1);
+
+const rectLight = new THREE.RectAreaLight(0xffffff, 1, 10, 10);
+rectLight.position.set(3, 0, 0);
+scene.add(rectLight);
 
 //font loader
 const loader = new THREE.FontLoader();
@@ -117,7 +123,7 @@ floor.rotation.x = -Math.PI * 0.4;
 scene.add(floor);
 
 //remove this later
-camera.position.y = -maxScroll;
+// camera.position.y = -maxScroll;
 
 // Instantiate a loader
 const gltfLoader = new GLTFLoader();
@@ -131,12 +137,14 @@ gltfLoader.load(
   function (g) {
     gltf = g;
     scene.add(gltf.scene);
+    rectLight.lookAt(gltf.scene.position);
 
-    gltf.scene.position.y = -4.5;
+    gltf.scene.position.y = -4.4;
     gltf.scene.position.x = -1;
     gltf.scene.scale.set(0.2, 0.2, 0.2);
-    gltf.scene.rotation.y = -Math.PI * 0.35;
-    // gltf.scene.rotation.x = Math.PI * 0.15;
+    gltf.scene.rotation.y = -Math.PI * 0.3;
+    gltf.scene.rotation.z = -Math.PI * 0.03;
+    gltf.scene.rotation.x = -Math.PI * 0.05;
 
     //center wheels to spin on axis
     gltf.scene.children[0].children[5].position.y = -83;
@@ -304,23 +312,29 @@ window.addEventListener("wheel", (event) => {
     webDeveloper3DText.position.z = 0.4;
   }
 
-  //move tires to front and back by passing the direction using conditional
-  event.deltaY > 0 ? moveVehicleToFront(true) : moveVehicleToFront(false);
+  //move vehicle to front and back by passing the direction using conditional
+  if (event.deltaY > 0 && scrollPos >= maxScroll) {
+    moveVehicleToFront(true);
+  } else if (event.deltaY < 0 && scrollPos >= maxScroll) {
+    moveVehicleToFront(false);
+  }
 
   // console.log("Camera: " + camera.position.y);
   // console.log(webDeveloperLabel);
   // console.log("Label: " + webDeveloperLabel.position.y);
 });
 
-//move vehicle tires in direction
+//move vehicle
 const moveVehicleToFront = (front) => {
-  //rotate wheels as scene progresses
+  //rotate wheels as scene progresses and move vehicle
   if (front) {
     gltf.scene.children[0].children[5].rotation.x += 10;
     gltf.scene.children[0].children[6].rotation.x += 10;
+    gltf.scene.position.x += 0.02;
   } else {
     gltf.scene.children[0].children[5].rotation.x -= 10;
     gltf.scene.children[0].children[6].rotation.x -= 10;
+    gltf.scene.position.x -= 0.02;
   }
 };
 
