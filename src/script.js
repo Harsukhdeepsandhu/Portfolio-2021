@@ -1,11 +1,8 @@
 import "./style.css";
 import * as THREE from "three";
-import * as dat from "dat.gui";
 import { CSS2DRenderer, CSS2DObject } from "./CSS2DRenderer";
-// import { OBJLoader } from "./OBJLoader";
 import { GLTFLoader } from "./GLTFLoader";
-import { RectAreaLight } from "three";
-import { RectAreaLightHelper } from "../node_modules/three/examples/jsm/helpers/RectAreaLightHelper.js";
+import { gsap } from "gsap";
 
 //dimensions
 let HEIGHT = window.innerHeight;
@@ -21,7 +18,7 @@ const textureLoader = new THREE.TextureLoader();
 const tileTexture = textureLoader.load("/textures/bricks/tile.png");
 tileTexture.wrapS = THREE.RepeatWrapping;
 tileTexture.wrapT = THREE.RepeatWrapping;
-tileTexture.repeat.x = 100;
+tileTexture.repeat.x = 50;
 tileTexture.repeat.y = 1;
 
 //setup scene and camera
@@ -39,9 +36,12 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 scene.add(directionalLight);
 directionalLight.position.set(0, 0, 1);
 
-const rectLight = new THREE.RectAreaLight(0xffffff, 1, 10, 10);
-rectLight.position.set(3, 0, 0);
-scene.add(rectLight);
+const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+scene.add(ambientLight);
+
+// const rectLight = new THREE.RectAreaLight(0xffffff, 1, 10, 10);
+// rectLight.position.set(3, 0, 0);
+// scene.add(rectLight);
 
 //font loader
 const loader = new THREE.FontLoader();
@@ -113,17 +113,14 @@ loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
 scene.add(welcomeMesh, webDeveloperMesh);
 
 //floor
-const floorGeom = new THREE.PlaneGeometry(100, 0.5, 1);
+const floorGeom = new THREE.PlaneGeometry(50, 2, 1);
 const floorMaterial = new THREE.MeshStandardMaterial({
   map: tileTexture,
 });
 const floor = new THREE.Mesh(floorGeom, floorMaterial);
-floor.position.set(0, -4.5, 0);
-floor.rotation.x = -Math.PI * 0.4;
+floor.position.set(20, -4.5, 0);
+floor.rotation.x = -Math.PI * 0.5;
 scene.add(floor);
-
-//remove this later
-// camera.position.y = -maxScroll;
 
 // Instantiate a loader
 const gltfLoader = new GLTFLoader();
@@ -136,32 +133,14 @@ gltfLoader.load(
   // called when the resource is loaded
   function (g) {
     gltf = g;
-    scene.add(gltf.scene);
-    rectLight.lookAt(gltf.scene.position);
+    // rectLight.lookAt(gltf.scene.position);
 
     gltf.scene.position.y = -4.4;
     gltf.scene.position.x = -1;
+    gltf.scene.rotation.y = -Math.PI * 0.35;
     gltf.scene.scale.set(0.2, 0.2, 0.2);
-    gltf.scene.rotation.y = -Math.PI * 0.3;
-    gltf.scene.rotation.z = -Math.PI * 0.03;
-    gltf.scene.rotation.x = -Math.PI * 0.05;
 
-    //center wheels to spin on axis
-    gltf.scene.children[0].children[5].position.y = -83;
-    gltf.scene.children[0].children[6].position.y = 43;
-    gltf.scene.children[0].children[6].position.z = 18;
-    gltf.scene.children[0].children[5].children[0].geometry.center();
-    gltf.scene.children[0].children[5].children[1].geometry.center();
-    gltf.scene.children[0].children[5].children[2].geometry.center();
-    gltf.scene.children[0].children[6].children[0].geometry.center();
-    gltf.scene.children[0].children[6].children[1].geometry.center();
-    gltf.scene.children[0].children[6].children[2].geometry.center();
-
-    gltf.animations; // Array<THREE.AnimationClip>
-    gltf.scene; // THREE.Group
-    gltf.scenes; // Array<THREE.Group>
-    gltf.cameras; // Array<THREE.Camera>
-    gltf.asset; // Object
+    scene.add(gltf.scene);
   },
   // called while loading is progressing
   function (xhr) {},
@@ -171,42 +150,47 @@ gltfLoader.load(
   }
 );
 
+//About board
+const aboutGroup = new THREE.Group();
+
+const aboutLeg1Geometry = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 4);
+const aboutLeg1Material = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+const aboutLeg1 = new THREE.Mesh(aboutLeg1Geometry, aboutLeg1Material);
+
+aboutLeg1.position.y = -4.5;
+
+scene.add(aboutLeg1);
+
+// scene.add(aboutGroup);
+
 //sticky Text
 const welcomeTextDiv = document.createElement("div");
 welcomeTextDiv.className = "label";
 welcomeTextDiv.textContent = "Welcome";
-welcomeTextDiv.style.marginTop = "-1em";
 const welcomeTextLabel = new CSS2DObject(welcomeTextDiv);
 welcomeTextLabel.position.set(0, 0.2, 0);
-welcomeTextLabel.visible = false;
 welcomeMesh.add(welcomeTextLabel);
 
 const welcomeTextDiv2 = document.createElement("div");
 welcomeTextDiv2.className = "label";
 welcomeTextDiv2.textContent = "My name is: ";
-welcomeTextDiv2.style.marginTop = "-1em";
 const welcomeTextLabel2 = new CSS2DObject(welcomeTextDiv2);
 welcomeTextLabel2.position.set(0, -0.1, 0);
-welcomeTextLabel2.visible = false;
 welcomeMesh.add(welcomeTextLabel2);
 
 const welcomeTextDiv3 = document.createElement("div");
 welcomeTextDiv3.className = "label";
 welcomeTextDiv3.textContent = "Harsukhdeep Sandhu";
-welcomeTextDiv3.style.marginTop = "-1em";
 const welcomeTextLabel3 = new CSS2DObject(welcomeTextDiv3);
 welcomeTextLabel3.position.set(0, -0.4, 0);
-welcomeTextLabel3.visible = false;
 welcomeMesh.add(welcomeTextLabel3);
 
 //web developer sticky text
 const webDeveloperText = document.createElement("div");
 webDeveloperText.className = "label";
 webDeveloperText.textContent = "I am a";
-webDeveloperText.style.marginTop = "-1em";
 const webDeveloperLabel = new CSS2DObject(webDeveloperText);
 webDeveloperLabel.position.set(0, 0.2, 0);
-webDeveloperLabel.visible = false;
 webDeveloperMesh.add(webDeveloperLabel);
 
 //render Text to Canvas
@@ -225,21 +209,23 @@ const animate = () => {
   //timer
   const elapsedTime = clock.getElapsedTime();
 
-  //rotate Text
-  textMesh.rotation.y = Math.cos(elapsedTime) * 0.15;
+  if (scrollPos < 2) {
+    //rotate Text
+    textMesh.rotation.y = Math.cos(elapsedTime) * 0.15;
 
-  //update spinningObj
-  spinningObj.rotation.x = 1.5 * elapsedTime;
-  spinningObj.rotation.y = 1.5 * elapsedTime;
-  spinningObj.rotation.z = 1.5 * elapsedTime;
+    //update spinningObj
+    spinningObj.rotation.x = 1.5 * elapsedTime;
+    spinningObj.rotation.y = 1.5 * elapsedTime;
+    spinningObj.rotation.z = 1.5 * elapsedTime;
 
-  spinningObj2.rotation.x = 2 * elapsedTime;
-  spinningObj2.rotation.y = 2 * elapsedTime;
-  spinningObj2.rotation.z = 2 * elapsedTime;
+    spinningObj2.rotation.x = 2 * elapsedTime;
+    spinningObj2.rotation.y = 2 * elapsedTime;
+    spinningObj2.rotation.z = 2 * elapsedTime;
 
-  spinningObj3.rotation.x = 2.5 * elapsedTime;
-  spinningObj3.rotation.y = 2.5 * elapsedTime;
-  spinningObj3.rotation.z = 2.5 * elapsedTime;
+    spinningObj3.rotation.x = 2.5 * elapsedTime;
+    spinningObj3.rotation.y = 2.5 * elapsedTime;
+    spinningObj3.rotation.z = 2.5 * elapsedTime;
+  }
 
   labelRenderer.render(scene, camera);
   requestAnimationFrame(animate);
@@ -250,11 +236,33 @@ window.addEventListener("wheel", (event) => {
   //scroll to bottom of page
   if (horizontalScroll <= 0) {
     if (event.deltaY < 0) {
+      //animate camera rotation on corner
+      if (scrollPos >= maxScroll) {
+        gsap.fromTo(
+          camera.rotation,
+          { y: -Math.PI * 0.5 },
+          { y: 0, duration: 5 }
+        );
+        gsap.fromTo(camera.position, { z: 0 }, { z: 1, duration: 5 });
+        gsap.fromTo(camera.position, { x: -2 }, { x: 0, duration: 5 });
+      }
+
       if (scrollPos > 0) {
         scrollPos -= 0.02;
       }
     } else if (event.deltaY > 0 && scrollPos < maxScroll) {
       scrollPos += 0.02;
+
+      //animate camera rotation on corner
+      if (maxScroll <= scrollPos) {
+        gsap.fromTo(
+          camera.rotation,
+          { y: 0 },
+          { y: -Math.PI * 0.5, duration: 5 }
+        );
+        gsap.fromTo(camera.position, { z: 1 }, { z: 0, duration: 5 });
+        gsap.fromTo(camera.position, { x: 0 }, { x: -2, duration: 5 });
+      }
     }
     //Move camera position y according to user scroll
     camera.position.y = -scrollPos;
@@ -269,47 +277,37 @@ window.addEventListener("wheel", (event) => {
     } else if (event.deltaY > 0) {
       horizontalScroll += 0.02;
     }
+
     //move camera position x according to user scroll
     camera.position.x = horizontalScroll;
   }
 
-  //update welcome text
-  if (camera.position.y <= welcomeTextLabel.position.y - 1) {
-    welcomeTextLabel.visible = true;
-  } else {
-    welcomeTextLabel.visible = false;
+  //update welcome text and update web developer text
+  if (roundToOneDigit(camera.position.y) === welcomeTextLabel.position.y - 1) {
+    gsap.to(welcomeTextLabel.element, { opacity: 1, duration: 5 });
+  } else if (
+    roundToOneDigit(camera.position.y) ===
+    welcomeTextLabel2.position.y - 1
+  ) {
+    gsap.to(welcomeTextLabel2.element, { opacity: 1, duration: 5 });
+  } else if (
+    roundToOneDigit(camera.position.y) ===
+    welcomeTextLabel3.position.y - 1
+  ) {
+    gsap.to(welcomeTextLabel3.element, { opacity: 1, duration: 5 });
+  } else if (
+    roundToOneDigit(camera.position.y) ===
+    webDeveloperLabel.position.y - 2.5
+  ) {
+    gsap.to(webDeveloperLabel.element, { opacity: 1, duration: 5 });
   }
 
-  if (camera.position.y <= welcomeTextLabel2.position.y - 1) {
-    welcomeTextLabel2.visible = true;
-  } else {
-    welcomeTextLabel2.visible = false;
-  }
-
-  if (camera.position.y <= welcomeTextLabel3.position.y - 1) {
-    welcomeTextLabel3.visible = true;
-  } else {
-    welcomeTextLabel3.visible = false;
-  }
-
-  //update web developer text
-  if (camera.position.y <= webDeveloperLabel.position.y - 2.5) {
-    webDeveloperLabel.visible = true;
-  } else {
-    webDeveloperLabel.visible = false;
-  }
-
-  //update webdeveloper 3d Text
-  if (camera.position.y <= webDeveloper3DText.position.y) {
-    webDeveloper3DText.position.z = 0;
-  } else if (camera.position.y <= webDeveloper3DText.position.y + 0.1) {
-    webDeveloper3DText.position.z = 0.1;
-  } else if (camera.position.y <= webDeveloper3DText.position.y + 0.2) {
-    webDeveloper3DText.position.z = 0.2;
-  } else if (camera.position.y <= webDeveloper3DText.position.y + 0.3) {
-    webDeveloper3DText.position.z = 0.3;
-  } else if (camera.position.y <= webDeveloper3DText.position.y + 0.4) {
-    webDeveloper3DText.position.z = 0.4;
+  //update 3d text on user scroll
+  if (
+    roundToOneDigit(camera.position.y) ==
+    webDeveloper3DText.position.y + 0.2
+  ) {
+    gsap.to(webDeveloper3DText.position, { z: 0, duration: 5 });
   }
 
   //move vehicle to front and back by passing the direction using conditional
@@ -318,26 +316,26 @@ window.addEventListener("wheel", (event) => {
   } else if (event.deltaY < 0 && scrollPos >= maxScroll) {
     moveVehicleToFront(false);
   }
-
-  // console.log("Camera: " + camera.position.y);
-  // console.log(webDeveloperLabel);
-  // console.log("Label: " + webDeveloperLabel.position.y);
 });
 
-//move vehicle
+//round to one digit
+const roundToOneDigit = (val) => {
+  return Math.floor(val * 10) / 10;
+};
+
+//move vehicle and light with it
 const moveVehicleToFront = (front) => {
-  //rotate wheels as scene progresses and move vehicle
+  //move vehicle as scene progresses and move vehicle
   if (front) {
-    gltf.scene.children[0].children[5].rotation.x += 10;
-    gltf.scene.children[0].children[6].rotation.x += 10;
     gltf.scene.position.x += 0.02;
+    // rectLight.position.x += 0.02;
   } else {
-    gltf.scene.children[0].children[5].rotation.x -= 10;
-    gltf.scene.children[0].children[6].rotation.x -= 10;
     gltf.scene.position.x -= 0.02;
+    // rectLight.position.x -= 0.02;
   }
 };
 
+//handle resize of the window
 window.addEventListener("resize", () => {
   HEIGHT = window.innerHeight;
   WIDTH = window.innerWidth;
