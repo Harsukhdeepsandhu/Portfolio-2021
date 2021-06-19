@@ -11,7 +11,7 @@ let WIDTH = window.innerWidth;
 let scrollPos = 0;
 let horizontalScroll = -2;
 //determined by the y of the last object
-let maxScroll = 4;
+let maxScroll = 4.6;
 
 //dat.gui initialization
 const gui = new GUI();
@@ -21,18 +21,17 @@ gui.open();
 //textures
 const textureLoader = new THREE.TextureLoader();
 
-// const tileTexture = textureLoader.load("/textures/bricks/tile.png");
-// tileTexture.wrapS = THREE.RepeatWrapping;
-// tileTexture.wrapT = THREE.RepeatWrapping;
-// tileTexture.repeat.x = 50;
-// tileTexture.repeat.y = 1;
-
 const roadTexture = textureLoader.load("/textures/road.png");
+const woodTexture = textureLoader.load("/textures/wood.jpg");
+const wood2Texture = textureLoader.load("/textures/wood2.jpg");
+const curbTexture = textureLoader.load("/textures/curb.png");
 
 roadTexture.wrapS = THREE.RepeatWrapping;
-// roadTexture.wrapT = THREE.RepeatWrapping;
 roadTexture.repeat.x = 40;
 roadTexture.repeat.y = 1;
+curbTexture.wrapS = THREE.MirroredRepeatWrapping;
+curbTexture.repeat.x = 100;
+curbTexture.repeat.y = 1;
 
 //setup scene and camera
 const scene = new THREE.Scene();
@@ -51,11 +50,6 @@ directionalLight.position.set(0, 0, 1);
 
 const light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
 scene.add(light);
-// const helper = new THREE.HemisphereLightHelper(light, 4);
-// scene.add(helper);
-
-//directionLight2 gui controls
-// gui.add(light.position, "y", -10, 0, 0.1);
 
 const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
 scene.add(ambientLight);
@@ -129,15 +123,27 @@ loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
 
 scene.add(welcomeMesh, webDeveloperMesh);
 
-//floor
-const floorGeom = new THREE.PlaneGeometry(50, 1, 1);
-const floorMaterial = new THREE.MeshStandardMaterial({
+//road
+const roadGeom = new THREE.PlaneGeometry(50, 1, 1);
+const roadMaterial = new THREE.MeshStandardMaterial({
   map: roadTexture,
 });
-const floor = new THREE.Mesh(floorGeom, floorMaterial);
-floor.position.set(20, -4.5, 0);
-floor.rotation.x = -Math.PI * 0.5;
-scene.add(floor);
+const road = new THREE.Mesh(roadGeom, roadMaterial);
+road.position.set(20, -5, 0);
+road.rotation.x = -Math.PI * 0.5;
+scene.add(road);
+
+//road curb
+const roadCurbGeom = new THREE.BoxGeometry(50, 0.1, 0.08);
+const roadCurbMaterial = new THREE.MeshBasicMaterial({ map: curbTexture });
+
+const roadCurb1 = new THREE.Mesh(roadCurbGeom, roadCurbMaterial);
+const roadCurb2 = new THREE.Mesh(roadCurbGeom, roadCurbMaterial);
+
+roadCurb1.position.set(20, -5, -0.5);
+roadCurb2.position.set(20, -5, 0.5);
+
+scene.add(roadCurb1, roadCurb2);
 
 // Instantiate a loader
 const gltfLoader = new GLTFLoader();
@@ -151,7 +157,7 @@ gltfLoader.load(
   function (g) {
     gltf = g;
 
-    gltf.scene.position.y = -4.4;
+    gltf.scene.position.y = -4.9;
     gltf.scene.position.x = -1;
     gltf.scene.rotation.y = -Math.PI * 0.35;
     gltf.scene.scale.set(0.2, 0.2, 0.2);
@@ -167,27 +173,27 @@ gltfLoader.load(
 );
 
 //reusable legs for boards
-const boardLegGeom = new THREE.CylinderGeometry(0.02, 0.02, 1, 4);
-const boardLegMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+const boardLegGeom = new THREE.BoxGeometry(0.05, 1.5, 0.05);
+const boardLegMaterial = new THREE.MeshStandardMaterial({ map: woodTexture });
+const boardGeom = new THREE.PlaneGeometry(1, 0.5);
+const boardMaterial = new THREE.MeshBasicMaterial({ map: wood2Texture });
 
 //About board
 const aboutGroup = new THREE.Group();
 
 const aboutLeg1 = new THREE.Mesh(boardLegGeom, boardLegMaterial);
 const aboutLeg2 = new THREE.Mesh(boardLegGeom, boardLegMaterial);
-
-const aboutBoardGeom = new THREE.PlaneGeometry(1, 0.5);
-const aboutBoardMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-const aboutBoardMesh = new THREE.Mesh(aboutBoardGeom, aboutBoardMaterial);
+const aboutBoardMesh = new THREE.Mesh(boardGeom, boardMaterial);
 
 aboutLeg1.position.set(-0.5, 0, 0);
 aboutLeg2.position.set(0.5, 0, 0);
-aboutBoardMesh.position.set(0, 0.25, 0);
+aboutBoardMesh.position.set(0, 0.5, 0);
 aboutBoardMesh.rotation.x = Math.PI;
 
 aboutGroup.add(aboutLeg1, aboutLeg2, aboutBoardMesh);
 aboutGroup.rotation.y = Math.PI * 0.5;
-aboutGroup.position.y = -4.1;
+aboutGroup.position.y = -4.3;
+aboutGroup.position.x = 2.5;
 
 scene.add(aboutGroup);
 
@@ -240,8 +246,10 @@ camera.position.z = 1;
 
 //camera dat.gui
 const cameraGUI = gui.addFolder("Camera");
+cameraGUI.open();
 cameraGUI.add(camera.position, "x", -2, 10, 0.1);
 cameraGUI.add(camera.position, "y", -maxScroll, 0, 0.1);
+cameraGUI.add(camera.position, "z", -10, 10, 0.1);
 
 //remove this later on
 // gsap.to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 });
