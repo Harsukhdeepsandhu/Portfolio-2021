@@ -13,6 +13,14 @@ let horizontalScroll = 0;
 //determined by the y of the last object
 let maxScroll = 4.6;
 const cameraPanTween = gsap.timeline({ paused: true });
+const text3DTween = gsap.timeline();
+//for getting direction of touch on mobile devices
+let touchStart,
+  touchEvent = {
+    deltaY: 0,
+  };
+//scroll intensity
+let scrollBy = 0.02;
 
 //dat.gui initialization
 const gui = new GUI();
@@ -198,8 +206,6 @@ aboutGroup.position.x = 2.5;
 
 scene.add(aboutGroup);
 
-// camera.position.y = -maxScroll;
-
 //about board gui
 gui.add(aboutBoardMesh.rotation, "x", 0, Math.PI, 0.1);
 gui.add(aboutBoardMesh.rotation, "y", 0, Math.PI, 0.1);
@@ -252,11 +258,6 @@ cameraGUI.add(camera.position, "x", -2, 10, 0.1);
 cameraGUI.add(camera.position, "y", -maxScroll, 0, 0.1);
 cameraGUI.add(camera.position, "z", -10, 10, 0.1);
 
-//remove this later on
-// gsap.to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 });
-// gsap.to(camera.position, { z: 0, duration: 5 });
-// gsap.to(camera.position, { x: -2, duration: 5 });
-
 const clock = new THREE.Clock();
 
 const animate = () => {
@@ -286,31 +287,40 @@ const animate = () => {
   renderer.render(scene, camera);
 };
 
-window.addEventListener("wheel", (event) => {
-  if (!cameraPanTween.isActive()) {
+//round to one digit
+const roundToOneDigit = (val) => {
+  return Math.floor(val * 10) / 10;
+};
+
+//move vehicle and light with it
+const moveVehicleToFront = (front) => {
+  //move vehicle as scene progresses and move vehicle
+  if (front) {
+    gltf.scene.position.x += scrollBy;
+  } else {
+    gltf.scene.position.x -= scrollBy;
+  }
+};
+
+const updateSceneOnUserInput = (event) => {
+  console.log(event);
+  if (!cameraPanTween.isActive() && !text3DTween.isActive()) {
     //scroll to bottom of page
     if (horizontalScroll <= 0) {
       if (event.deltaY < 0) {
         //animate camera rotation on corner
         if (scrollPos > maxScroll) {
-          // cameraPanTween
-          //   .to(camera.rotation, { y: 0, duration: 5, reversed: true })
-          //   .to(camera.position, { z: 1, duration: 5, reversed: true })
-          //   .to(camera.position, { x: 0, duration: 5, reversed: true });
-          // cameraPanTween.play();
-          // console.log("here");
           cameraPanTween.reverse();
         }
         if (scrollPos > 0) {
-          scrollPos -= 0.02;
+          scrollPos -= scrollBy;
         }
       } else if (event.deltaY > 0 && scrollPos < maxScroll) {
-        scrollPos += 0.02;
+        scrollPos += scrollBy;
 
         //animate camera rotation on corner
         if (maxScroll < scrollPos) {
           cameraPanTween
-            // .to(camera.position, { x: -2, duration: 5 }, 0)
             .to(camera.position, { z: 0, duration: 5 }, 0)
             .to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 }, 0)
             .to(gltf.scene.position, { x: 1, duration: 5 }, 0);
@@ -325,10 +335,10 @@ window.addEventListener("wheel", (event) => {
     if (maxScroll <= scrollPos) {
       if (event.deltaY < 0) {
         if (horizontalScroll > 0) {
-          horizontalScroll -= 0.02;
+          horizontalScroll -= scrollBy;
         }
       } else if (event.deltaY > 0) {
-        horizontalScroll += 0.02;
+        horizontalScroll += scrollBy;
       }
 
       //move camera position x according to user scroll
@@ -359,11 +369,8 @@ window.addEventListener("wheel", (event) => {
     }
 
     //update 3d text on user scroll
-    if (
-      roundToOneDigit(camera.position.y) ==
-      webDeveloper3DText.position.y + 0.2
-    ) {
-      gsap.to(webDeveloper3DText.position, { z: 0, duration: 5 });
+    if (roundToOneDigit(camera.position.y) === webDeveloper3DText.position.y) {
+      text3DTween.to(webDeveloper3DText.position, { z: 0, duration: 5 }, 0);
     }
 
     //move vehicle to front and back by passing the direction using conditional
@@ -373,22 +380,27 @@ window.addEventListener("wheel", (event) => {
       moveVehicleToFront(false);
     }
   }
+};
+
+window.addEventListener("wheel", updateSceneOnUserInput.bind(event));
+
+window.addEventListener("touchstart", (event) => {
+  touchStart = event.touches[0].clientY;
 });
 
-//round to one digit
-const roundToOneDigit = (val) => {
-  return Math.floor(val * 10) / 10;
-};
-
-//move vehicle and light with it
-const moveVehicleToFront = (front) => {
-  //move vehicle as scene progresses and move vehicle
-  if (front) {
-    gltf.scene.position.x += 0.02;
-  } else {
-    gltf.scene.position.x -= 0.02;
+window.addEventListener("touchend", (event) => {
+  var touchEnd = event.changedTouches[0].clientY;
+  if (touchStart > touchEnd + 5) {
+    touchEvent = { deltaY: 1 };
+  } else if (touchStart < touchEnd - 5) {
+    touchEvent = { deltaY: -1 };
   }
-};
+  updateSceneOnUserInput(touchEvent);
+});
+
+// window.addEventListener("touchmove", () => {
+//   updateSceneOnUserInput(touchEvent);
+// });
 
 //handle resize of the window
 window.addEventListener("resize", () => {
