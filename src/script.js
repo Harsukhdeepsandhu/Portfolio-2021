@@ -9,9 +9,10 @@ import { GUI } from "dat.gui";
 let HEIGHT = window.innerHeight;
 let WIDTH = window.innerWidth;
 let scrollPos = 0;
-let horizontalScroll = -2;
+let horizontalScroll = 0;
 //determined by the y of the last object
 let maxScroll = 4.6;
+const cameraPanTween = gsap.timeline({ paused: true });
 
 //dat.gui initialization
 const gui = new GUI();
@@ -197,7 +198,7 @@ aboutGroup.position.x = 2.5;
 
 scene.add(aboutGroup);
 
-camera.position.y = -maxScroll;
+// camera.position.y = -maxScroll;
 
 //about board gui
 gui.add(aboutBoardMesh.rotation, "x", 0, Math.PI, 0.1);
@@ -286,80 +287,91 @@ const animate = () => {
 };
 
 window.addEventListener("wheel", (event) => {
-  //scroll to bottom of page
-  if (horizontalScroll <= 0) {
-    if (event.deltaY < 0) {
-      //animate camera rotation on corner
-      if (scrollPos > maxScroll) {
-        gsap.to(camera.rotation, { y: 0, duration: 5 });
-        gsap.to(camera.position, { z: 1, duration: 5 });
-        gsap.to(camera.position, { x: 0, duration: 5 });
-      }
+  if (!cameraPanTween.isActive()) {
+    //scroll to bottom of page
+    if (horizontalScroll <= 0) {
+      if (event.deltaY < 0) {
+        //animate camera rotation on corner
+        if (scrollPos > maxScroll) {
+          // cameraPanTween
+          //   .to(camera.rotation, { y: 0, duration: 5, reversed: true })
+          //   .to(camera.position, { z: 1, duration: 5, reversed: true })
+          //   .to(camera.position, { x: 0, duration: 5, reversed: true });
+          // cameraPanTween.play();
+          // console.log("here");
+          cameraPanTween.reverse();
+        }
+        if (scrollPos > 0) {
+          scrollPos -= 0.02;
+        }
+      } else if (event.deltaY > 0 && scrollPos < maxScroll) {
+        scrollPos += 0.02;
 
-      if (scrollPos > 0) {
-        scrollPos -= 0.02;
+        //animate camera rotation on corner
+        if (maxScroll < scrollPos) {
+          cameraPanTween
+            // .to(camera.position, { x: -2, duration: 5 }, 0)
+            .to(camera.position, { z: 0, duration: 5 }, 0)
+            .to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 }, 0)
+            .to(gltf.scene.position, { x: 1, duration: 5 }, 0);
+          cameraPanTween.play();
+        }
       }
-    } else if (event.deltaY > 0 && scrollPos < maxScroll) {
-      scrollPos += 0.02;
-
-      //animate camera rotation on corner
-      if (maxScroll < scrollPos) {
-        gsap.to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 });
-        gsap.to(camera.position, { z: 0, duration: 5 });
-        gsap.to(camera.position, { x: -2, duration: 5 });
-      }
-    }
-    //Move camera position y according to user scroll
-    camera.position.y = -scrollPos;
-  }
-
-  //scroll page to left and right
-  if (maxScroll <= scrollPos) {
-    if (event.deltaY < 0) {
-      if (horizontalScroll > 0) {
-        horizontalScroll -= 0.02;
-      }
-    } else if (event.deltaY > 0) {
-      horizontalScroll += 0.02;
+      //Move camera position y according to user scroll
+      camera.position.y = -scrollPos;
     }
 
-    //move camera position x according to user scroll
-    camera.position.x = horizontalScroll;
-  }
+    //scroll page to left and right
+    if (maxScroll <= scrollPos) {
+      if (event.deltaY < 0) {
+        if (horizontalScroll > 0) {
+          horizontalScroll -= 0.02;
+        }
+      } else if (event.deltaY > 0) {
+        horizontalScroll += 0.02;
+      }
 
-  //update welcome text and update web developer text
-  if (roundToOneDigit(camera.position.y) === welcomeTextLabel.position.y - 1) {
-    gsap.to(welcomeTextLabel.element, { opacity: 1, duration: 5 });
-  } else if (
-    roundToOneDigit(camera.position.y) ===
-    welcomeTextLabel2.position.y - 1
-  ) {
-    gsap.to(welcomeTextLabel2.element, { opacity: 1, duration: 5 });
-  } else if (
-    roundToOneDigit(camera.position.y) ===
-    welcomeTextLabel3.position.y - 1
-  ) {
-    gsap.to(welcomeTextLabel3.element, { opacity: 1, duration: 5 });
-  } else if (
-    roundToOneDigit(camera.position.y) ===
-    webDeveloperLabel.position.y - 2.5
-  ) {
-    gsap.to(webDeveloperLabel.element, { opacity: 1, duration: 5 });
-  }
+      //move camera position x according to user scroll
+      camera.position.x = horizontalScroll;
+    }
 
-  //update 3d text on user scroll
-  if (
-    roundToOneDigit(camera.position.y) ==
-    webDeveloper3DText.position.y + 0.2
-  ) {
-    gsap.to(webDeveloper3DText.position, { z: 0, duration: 5 });
-  }
+    //update welcome text and update web developer text
+    if (
+      roundToOneDigit(camera.position.y) ===
+      welcomeTextLabel.position.y - 1
+    ) {
+      gsap.to(welcomeTextLabel.element, { opacity: 1, duration: 5 });
+    } else if (
+      roundToOneDigit(camera.position.y) ===
+      welcomeTextLabel2.position.y - 1
+    ) {
+      gsap.to(welcomeTextLabel2.element, { opacity: 1, duration: 5 });
+    } else if (
+      roundToOneDigit(camera.position.y) ===
+      welcomeTextLabel3.position.y - 1
+    ) {
+      gsap.to(welcomeTextLabel3.element, { opacity: 1, duration: 5 });
+    } else if (
+      roundToOneDigit(camera.position.y) ===
+      webDeveloperLabel.position.y - 2.5
+    ) {
+      gsap.to(webDeveloperLabel.element, { opacity: 1, duration: 5 });
+    }
 
-  //move vehicle to front and back by passing the direction using conditional
-  if (event.deltaY > 0 && scrollPos >= maxScroll) {
-    moveVehicleToFront(true);
-  } else if (event.deltaY < 0 && scrollPos >= maxScroll) {
-    moveVehicleToFront(false);
+    //update 3d text on user scroll
+    if (
+      roundToOneDigit(camera.position.y) ==
+      webDeveloper3DText.position.y + 0.2
+    ) {
+      gsap.to(webDeveloper3DText.position, { z: 0, duration: 5 });
+    }
+
+    //move vehicle to front and back by passing the direction using conditional
+    if (event.deltaY > 0 && scrollPos >= maxScroll) {
+      moveVehicleToFront(true);
+    } else if (event.deltaY < 0 && scrollPos >= maxScroll) {
+      moveVehicleToFront(false);
+    }
   }
 });
 
