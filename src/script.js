@@ -3,23 +3,36 @@ import * as THREE from "three";
 import { CSS2DRenderer, CSS2DObject } from "./CSS2DRenderer";
 import { GLTFLoader } from "./GLTFLoader";
 import { gsap } from "gsap";
+import { GUI } from "dat.gui";
 
 //dimensions
 let HEIGHT = window.innerHeight;
 let WIDTH = window.innerWidth;
 let scrollPos = 0;
-let horizontalScroll = 0;
+let horizontalScroll = -2;
 //determined by the y of the last object
 let maxScroll = 4;
+
+//dat.gui initialization
+const gui = new GUI();
+document.getElementById("gui").appendChild(gui.domElement);
+gui.open();
 
 //textures
 const textureLoader = new THREE.TextureLoader();
 
-const tileTexture = textureLoader.load("/textures/bricks/tile.png");
-tileTexture.wrapS = THREE.RepeatWrapping;
-tileTexture.wrapT = THREE.RepeatWrapping;
-tileTexture.repeat.x = 50;
-tileTexture.repeat.y = 1;
+// const tileTexture = textureLoader.load("/textures/bricks/tile.png");
+// tileTexture.wrapS = THREE.RepeatWrapping;
+// tileTexture.wrapT = THREE.RepeatWrapping;
+// tileTexture.repeat.x = 50;
+// tileTexture.repeat.y = 1;
+
+const roadTexture = textureLoader.load("/textures/road.png");
+
+roadTexture.wrapS = THREE.RepeatWrapping;
+// roadTexture.wrapT = THREE.RepeatWrapping;
+roadTexture.repeat.x = 40;
+roadTexture.repeat.y = 1;
 
 //setup scene and camera
 const scene = new THREE.Scene();
@@ -36,12 +49,16 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 scene.add(directionalLight);
 directionalLight.position.set(0, 0, 1);
 
+const light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+scene.add(light);
+// const helper = new THREE.HemisphereLightHelper(light, 4);
+// scene.add(helper);
+
+//directionLight2 gui controls
+// gui.add(light.position, "y", -10, 0, 0.1);
+
 const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
 scene.add(ambientLight);
-
-// const rectLight = new THREE.RectAreaLight(0xffffff, 1, 10, 10);
-// rectLight.position.set(3, 0, 0);
-// scene.add(rectLight);
 
 //font loader
 const loader = new THREE.FontLoader();
@@ -113,9 +130,9 @@ loader.load("/fonts/helvetiker_regular.typeface.json", function (font) {
 scene.add(welcomeMesh, webDeveloperMesh);
 
 //floor
-const floorGeom = new THREE.PlaneGeometry(50, 2, 1);
+const floorGeom = new THREE.PlaneGeometry(50, 1, 1);
 const floorMaterial = new THREE.MeshStandardMaterial({
-  map: tileTexture,
+  map: roadTexture,
 });
 const floor = new THREE.Mesh(floorGeom, floorMaterial);
 floor.position.set(20, -4.5, 0);
@@ -133,7 +150,6 @@ gltfLoader.load(
   // called when the resource is loaded
   function (g) {
     gltf = g;
-    // rectLight.lookAt(gltf.scene.position);
 
     gltf.scene.position.y = -4.4;
     gltf.scene.position.x = -1;
@@ -150,18 +166,37 @@ gltfLoader.load(
   }
 );
 
+//reusable legs for boards
+const boardLegGeom = new THREE.CylinderGeometry(0.02, 0.02, 1, 4);
+const boardLegMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff });
+
 //About board
 const aboutGroup = new THREE.Group();
 
-const aboutLeg1Geometry = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 4);
-const aboutLeg1Material = new THREE.MeshStandardMaterial({ color: 0x00ffff });
-const aboutLeg1 = new THREE.Mesh(aboutLeg1Geometry, aboutLeg1Material);
+const aboutLeg1 = new THREE.Mesh(boardLegGeom, boardLegMaterial);
+const aboutLeg2 = new THREE.Mesh(boardLegGeom, boardLegMaterial);
 
-aboutLeg1.position.y = -4.5;
+const aboutBoardGeom = new THREE.PlaneGeometry(1, 0.5);
+const aboutBoardMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+const aboutBoardMesh = new THREE.Mesh(aboutBoardGeom, aboutBoardMaterial);
 
-scene.add(aboutLeg1);
+aboutLeg1.position.set(-0.5, 0, 0);
+aboutLeg2.position.set(0.5, 0, 0);
+aboutBoardMesh.position.set(0, 0.25, 0);
+aboutBoardMesh.rotation.x = Math.PI;
 
-// scene.add(aboutGroup);
+aboutGroup.add(aboutLeg1, aboutLeg2, aboutBoardMesh);
+aboutGroup.rotation.y = Math.PI * 0.5;
+aboutGroup.position.y = -4.1;
+
+scene.add(aboutGroup);
+
+camera.position.y = -maxScroll;
+
+//about board gui
+gui.add(aboutBoardMesh.rotation, "x", 0, Math.PI, 0.1);
+gui.add(aboutBoardMesh.rotation, "y", 0, Math.PI, 0.1);
+gui.add(aboutBoardMesh.rotation, "z", 0, Math.PI, 0.1);
 
 //sticky Text
 const welcomeTextDiv = document.createElement("div");
@@ -203,6 +238,16 @@ document.body.appendChild(labelRenderer.domElement);
 //camera position
 camera.position.z = 1;
 
+//camera dat.gui
+const cameraGUI = gui.addFolder("Camera");
+cameraGUI.add(camera.position, "x", -2, 10, 0.1);
+cameraGUI.add(camera.position, "y", -maxScroll, 0, 0.1);
+
+//remove this later on
+// gsap.to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 });
+// gsap.to(camera.position, { z: 0, duration: 5 });
+// gsap.to(camera.position, { x: -2, duration: 5 });
+
 const clock = new THREE.Clock();
 
 const animate = () => {
@@ -237,14 +282,10 @@ window.addEventListener("wheel", (event) => {
   if (horizontalScroll <= 0) {
     if (event.deltaY < 0) {
       //animate camera rotation on corner
-      if (scrollPos >= maxScroll) {
-        gsap.fromTo(
-          camera.rotation,
-          { y: -Math.PI * 0.5 },
-          { y: 0, duration: 5 }
-        );
-        gsap.fromTo(camera.position, { z: 0 }, { z: 1, duration: 5 });
-        gsap.fromTo(camera.position, { x: -2 }, { x: 0, duration: 5 });
+      if (scrollPos > maxScroll) {
+        gsap.to(camera.rotation, { y: 0, duration: 5 });
+        gsap.to(camera.position, { z: 1, duration: 5 });
+        gsap.to(camera.position, { x: 0, duration: 5 });
       }
 
       if (scrollPos > 0) {
@@ -254,14 +295,10 @@ window.addEventListener("wheel", (event) => {
       scrollPos += 0.02;
 
       //animate camera rotation on corner
-      if (maxScroll <= scrollPos) {
-        gsap.fromTo(
-          camera.rotation,
-          { y: 0 },
-          { y: -Math.PI * 0.5, duration: 5 }
-        );
-        gsap.fromTo(camera.position, { z: 1 }, { z: 0, duration: 5 });
-        gsap.fromTo(camera.position, { x: 0 }, { x: -2, duration: 5 });
+      if (maxScroll < scrollPos) {
+        gsap.to(camera.rotation, { y: -Math.PI * 0.5, duration: 5 });
+        gsap.to(camera.position, { z: 0, duration: 5 });
+        gsap.to(camera.position, { x: -2, duration: 5 });
       }
     }
     //Move camera position y according to user scroll
@@ -328,10 +365,8 @@ const moveVehicleToFront = (front) => {
   //move vehicle as scene progresses and move vehicle
   if (front) {
     gltf.scene.position.x += 0.02;
-    // rectLight.position.x += 0.02;
   } else {
     gltf.scene.position.x -= 0.02;
-    // rectLight.position.x -= 0.02;
   }
 };
 
