@@ -25,6 +25,14 @@ canvas {
   margin-top: -1em;
 }
 
+.boardText {
+  color: white;
+  font-size: 30px;
+  width: 100%;
+  text-align: center;
+  margin-top: -1em;
+}
+
 #gui {
   z-index: 100;
   position: absolute;

@@ -14,6 +14,7 @@ let horizontalScroll = 0;
 let maxScroll = 4.6;
 const cameraPanTween = gsap.timeline({ paused: true });
 const text3DTween = gsap.timeline();
+const welcomeTextTween = gsap.timeline();
 //for getting direction of touch on mobile devices
 let touchStart = 0,
   touchEvent = {
@@ -241,6 +242,13 @@ const webDeveloperLabel = new CSS2DObject(webDeveloperText);
 webDeveloperLabel.position.set(0, 0.2, 0);
 webDeveloperMesh.add(webDeveloperLabel);
 
+//skills sticky text
+const skillsText = document.createElement("div");
+skillsText.className = "boardText";
+skillsText.textContent = "Skills: ";
+const skillsTextLabel = new CSS2DObject(skillsText);
+aboutBoardMesh.add(skillsTextLabel);
+
 //render Text to Canvas
 let labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -251,12 +259,21 @@ document.body.appendChild(labelRenderer.domElement);
 //camera position
 camera.position.z = 1;
 
+//remove this later
+// camera.position.y = -maxScroll;
+// camera.position.x = 2;
+// camera.position.z = 2;
+// camera.rotation.z = Math.PI * 0.5;
+
 //camera dat.gui
 const cameraGUI = gui.addFolder("Camera");
 cameraGUI.open();
 cameraGUI.add(camera.position, "x", -2, 10, 0.1);
 cameraGUI.add(camera.position, "y", -maxScroll, 0, 0.1);
 cameraGUI.add(camera.position, "z", -10, 10, 0.1);
+cameraGUI.add(camera.rotation, "x", -Math.PI, Math.PI, 0.1).name("Rotate x: ");
+cameraGUI.add(camera.rotation, "y", -Math.PI, Math.PI, 0.1).name("Rotate y: ");
+cameraGUI.add(camera.rotation, "z", -Math.PI, Math.PI, 0.1).name("Rotate z: ");
 
 const clock = new THREE.Clock();
 
@@ -303,7 +320,6 @@ const moveVehicleToFront = (front) => {
 };
 
 const updateSceneOnUserInput = (event) => {
-  // console.log(event);
   if (!cameraPanTween.isActive() && !text3DTween.isActive()) {
     //scroll to bottom of page
     if (horizontalScroll <= 0) {
@@ -345,31 +361,20 @@ const updateSceneOnUserInput = (event) => {
       camera.position.x = horizontalScroll;
     }
 
-    //update welcome text and update web developer text
+    //update welcome text
     if (
       roundToOneDigit(camera.position.y) ===
       welcomeTextLabel.position.y - 1
     ) {
-      gsap.to(welcomeTextLabel.element, { opacity: 1, duration: 5 });
-    } else if (
-      roundToOneDigit(camera.position.y) ===
-      welcomeTextLabel2.position.y - 1
-    ) {
-      gsap.to(welcomeTextLabel2.element, { opacity: 1, duration: 5 });
-    } else if (
-      roundToOneDigit(camera.position.y) ===
-      welcomeTextLabel3.position.y - 1
-    ) {
-      gsap.to(welcomeTextLabel3.element, { opacity: 1, duration: 5 });
-    } else if (
-      roundToOneDigit(camera.position.y) ===
-      webDeveloperLabel.position.y - 2.5
-    ) {
-      gsap.to(webDeveloperLabel.element, { opacity: 1, duration: 5 });
+      welcomeTextTween
+        .to(welcomeTextLabel.element, { opacity: 1, duration: 1 })
+        .to(welcomeTextLabel2.element, { opacity: 1, duration: 1 })
+        .to(welcomeTextLabel3.element, { opacity: 1, duration: 1 });
     }
 
-    //update 3d text on user scroll
+    //update 3d text on user scroll and update web developer text
     if (roundToOneDigit(camera.position.y) === webDeveloper3DText.position.y) {
+      gsap.to(webDeveloperLabel.element, { opacity: 1, duration: 5 });
       text3DTween.to(webDeveloper3DText.position, { z: 0, duration: 5 }, 0);
     }
 
@@ -382,40 +387,14 @@ const updateSceneOnUserInput = (event) => {
   }
 };
 
-window.addEventListener("wheel", updateSceneOnUserInput.bind(event));
+window.addEventListener("wheel", updateSceneOnUserInput.bind());
 
+//handle touch for mobile devices
 window.addEventListener("touchstart", (event) => {
   touchStart = event.touches[0].clientY;
 });
 
-// window.addEventListener("touchend", (event) => {
-//   var touchEnd = event.changedTouches[0].clientY;
-//   if (touchStart > touchEnd + 5) {
-//     touchEvent = { deltaY: 1 };
-//   } else if (touchStart < touchEnd - 5) {
-//     touchEvent = { deltaY: -1 };
-//   }
-//   // updateSceneOnUserInput(touchEvent);
-// });
-
 window.addEventListener("touchmove", (e) => {
-  // if (touchStart === null) {
-  //   return;
-  // }
-
-  // var currentY = e.touches[0].clientY;
-
-  // var diffY = touchStart - currentY;
-
-  // // sliding vertically
-  // if (diffY > 0) {
-  //   // swiped up
-  //   console.log("swiped up");
-  // } else {
-  //   // swiped down
-  //   console.log("swiped down");
-  // }
-
   // touchStart = null;
   e.preventDefault();
   if (touchStart < e.touches[0].pageY) {
