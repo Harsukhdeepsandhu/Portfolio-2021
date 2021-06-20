@@ -15,7 +15,7 @@ let maxScroll = 4.6;
 const cameraPanTween = gsap.timeline({ paused: true });
 const text3DTween = gsap.timeline();
 //for getting direction of touch on mobile devices
-let touchStart,
+let touchStart = 0,
   touchEvent = {
     deltaY: 0,
   };
@@ -303,7 +303,7 @@ const moveVehicleToFront = (front) => {
 };
 
 const updateSceneOnUserInput = (event) => {
-  console.log(event);
+  // console.log(event);
   if (!cameraPanTween.isActive() && !text3DTween.isActive()) {
     //scroll to bottom of page
     if (horizontalScroll <= 0) {
@@ -315,7 +315,7 @@ const updateSceneOnUserInput = (event) => {
         if (scrollPos > 0) {
           scrollPos -= scrollBy;
         }
-      } else if (event.deltaY > 0 && scrollPos < maxScroll) {
+      } else if (event.deltaY > 0) {
         scrollPos += scrollBy;
 
         //animate camera rotation on corner
@@ -388,19 +388,45 @@ window.addEventListener("touchstart", (event) => {
   touchStart = event.touches[0].clientY;
 });
 
-window.addEventListener("touchend", (event) => {
-  var touchEnd = event.changedTouches[0].clientY;
-  if (touchStart > touchEnd + 5) {
-    touchEvent = { deltaY: 1 };
-  } else if (touchStart < touchEnd - 5) {
-    touchEvent = { deltaY: -1 };
+// window.addEventListener("touchend", (event) => {
+//   var touchEnd = event.changedTouches[0].clientY;
+//   if (touchStart > touchEnd + 5) {
+//     touchEvent = { deltaY: 1 };
+//   } else if (touchStart < touchEnd - 5) {
+//     touchEvent = { deltaY: -1 };
+//   }
+//   // updateSceneOnUserInput(touchEvent);
+// });
+
+window.addEventListener("touchmove", (e) => {
+  // if (touchStart === null) {
+  //   return;
+  // }
+
+  // var currentY = e.touches[0].clientY;
+
+  // var diffY = touchStart - currentY;
+
+  // // sliding vertically
+  // if (diffY > 0) {
+  //   // swiped up
+  //   console.log("swiped up");
+  // } else {
+  //   // swiped down
+  //   console.log("swiped down");
+  // }
+
+  // touchStart = null;
+  e.preventDefault();
+  if (touchStart < e.touches[0].pageY) {
+    touchEvent.deltaY = -1;
+  } else {
+    touchEvent.deltaY = 1;
   }
+  touchStart = e.touches[0].pageY;
+
   updateSceneOnUserInput(touchEvent);
 });
-
-// window.addEventListener("touchmove", () => {
-//   updateSceneOnUserInput(touchEvent);
-// });
 
 //handle resize of the window
 window.addEventListener("resize", () => {
